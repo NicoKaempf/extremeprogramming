@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extreme Programming</title>
+<style>
+:root{
+  color-scheme:light;
+  --wall:#DBDBD5;--board:#F9F9F6;--frame:#C3C6C7;
+  --ink:#202024;--muted:#5C5C63;
+  --blue:#1F4FB0;--green:#1A7A44;--red:#C8322E;
+  --card:#FFFDF5;--card-rule:#CFDDEC;--card-red:#E39C9C;
+  --sticky:#FFF1A1;--paper:#FFFFFF;--tape:rgba(222,213,180,.82);
+  --marker:"Kalam","Chalkboard SE","Bradley Hand",cursive;
+  --text:"Atkinson Hyperlegible","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--wall);color:var(--ink);font:400 clamp(16px,.45vw + 13px,19px)/1.5 var(--text)}
+h1,h2,h3,h4,p,ul,dl,dd{margin:0}
+a{color:inherit}
+.m{font-family:var(--marker)}
+.blue{color:var(--blue)}.green{color:var(--green)}
+.wall{padding:clamp(16px,2vw,28px)}
+.board{max-width:1560px;margin-inline:auto;background:var(--board);border:10px solid var(--frame);border-radius:6px;box-shadow:inset 0 0 0 1px #AEB1B2,0 18px 40px rgba(0,0,0,.2);padding:clamp(20px,3vw,56px) clamp(16px,3vw,56px) clamp(28px,3vw,56px);display:grid;gap:clamp(44px,5vw,84px)}
+h2{font:700 clamp(32px,3.6vw,56px)/1.1 var(--marker)}
+h2::after{content:"";display:block;width:5.5em;max-width:80%;height:5px;background:currentColor;border-radius:3px;transform:rotate(-.7deg);margin-top:2px;opacity:.85}
+.sec{display:grid;gap:clamp(16px,2vw,28px)}
+.lead{max-width:62ch;font-size:1.06em;color:var(--muted)}
+.prak{font:400 1rem/1.4 var(--marker);color:var(--muted)}
+.prak b{font-weight:700}
+
+/* sticky notes, tape */
+.sticky{background:var(--sticky);padding:16px 18px 20px;box-shadow:2px 4px 10px rgba(0,0,0,.14);transform:rotate(var(--rot,1deg));position:relative}
+.tape{position:absolute;left:50%;top:-11px;width:96px;height:24px;background:var(--tape);transform:translateX(-50%) rotate(-2.5deg);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+/* title */
+.title{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:clamp(20px,3vw,48px);align-items:start}
+.kicker{font-size:1.15rem;color:var(--muted)}
+h1{font:700 clamp(50px,7.2vw,116px)/1 var(--marker);letter-spacing:-.01em}
+.sub{max-width:54ch;font-size:1.15em;margin-top:14px}
+.facts{width:min(100%,320px);font-family:var(--marker);font-size:1.05rem;line-height:1.35;--rot:1.4deg;margin-top:14px}
+.facts b{display:block;font-size:1.3em;margin-bottom:6px}
+.facts ul{padding-left:1.1em}
+
+/* sliders */
+.sliders{display:grid;grid-template-columns:repeat(6,1fr);gap:16px 12px;padding-top:6px}
+.sl{display:grid;justify-items:center;align-content:start;text-align:center;gap:2px}
+.sl svg{width:min(100%,64px);height:auto;overflow:visible}
+.rail{stroke:var(--ink);stroke-width:4;stroke-linecap:round}
+.tk{font:700 14px var(--marker);fill:var(--ink);text-anchor:middle}
+.knob{fill:var(--green);stroke:var(--ink);stroke-width:2;transition:transform 1.1s cubic-bezier(.2,.7,.2,1) calc(var(--i)*100ms)}
+.noanim .knob{transition:none}
+.sl b{font:700 1.08rem/1.2 var(--marker);margin-top:6px}
+.sl span{font:400 .98rem/1.3 var(--marker);color:var(--muted);text-wrap:balance}
+
+/* iteration */
+.iter{display:grid;grid-template-columns:minmax(260px,.85fr) minmax(0,2fr);gap:clamp(20px,3vw,48px);align-items:start}
+.cycle{position:sticky;top:16px}
+.cycle svg{width:100%;height:auto;display:block}
+.ring{fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.arr{fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.nd{fill:var(--board);stroke:var(--ink);stroke-width:3}
+.hub{fill:none;stroke:var(--green);stroke-width:4}
+.nn{font:700 24px var(--marker);fill:var(--ink);text-anchor:middle}
+.nl{font:400 18px var(--marker);fill:var(--ink)}
+.hb{font:700 24px var(--marker);fill:var(--green);text-anchor:middle}
+.hs{font:400 15px var(--marker);fill:var(--muted);text-anchor:middle}
+.cap{font:400 1rem var(--marker);color:var(--muted);text-align:center;margin-top:6px}
+.steps{list-style:none;padding:0;display:grid;gap:clamp(18px,2vw,30px)}
+.step{display:grid;grid-template-columns:60px minmax(0,1.4fr) minmax(220px,.9fr);gap:14px 26px;padding-top:18px;border-top:2px dashed #C6C7C0}
+.snum{font:700 3rem/1 var(--marker);color:var(--green)}
+.stext{display:grid;gap:8px;align-content:start}
+.stext h3{font:700 1.55rem/1.15 var(--marker)}
+.stext h3 small{display:block;font-size:1rem;font-weight:400;color:var(--muted)}
+.stext p{max-width:60ch}
+.notes{display:grid;gap:16px;align-content:start;padding-top:8px}
+.note{display:block;text-decoration:none;font-size:.95em;line-height:1.4;--rot:-1deg;transition:box-shadow .2s}
+.note:nth-child(even){--rot:.9deg}
+.note b{display:block;font:700 1.02rem var(--marker);margin-bottom:3px}
+.note.kunde b{color:var(--blue)}.note.team b{color:var(--green)}
+.note:hover{box-shadow:3px 6px 14px rgba(0,0,0,.22)}
+
+/* index cards */
+.cgroup{display:grid;gap:14px}
+.cgroup h3{font:700 1.9rem/1 var(--marker)}
+.cards{display:grid;gap:28px 22px;padding:10px 6px}
+.cards.kunde{grid-template-columns:repeat(4,1fr)}
+.cards.team{grid-template-columns:repeat(3,1fr)}
+.card{position:relative;background-color:var(--card);background-image:repeating-linear-gradient(transparent 0 25px,var(--card-rule) 25px 26px);background-position:0 12px;box-shadow:1px 3px 8px rgba(0,0,0,.14);padding:22px 18px 18px;display:grid;gap:10px;align-content:start;transform:rotate(var(--rot));scroll-margin-top:24px;--c:var(--ink)}
+.card.kunde{--c:var(--blue)}.card.team{--c:var(--green)}
+.card:nth-child(3n+1){--rot:-.7deg}.card:nth-child(3n+2){--rot:.5deg}.card:nth-child(3n){--rot:-.3deg}
+.chead{border-bottom:2px solid var(--card-red);padding-bottom:8px;display:grid;gap:2px}
+.cno{font:700 .98rem var(--marker);color:var(--c)}
+.card h4{font:700 1.1rem/1.25 var(--text)}
+.rate svg{width:100%;height:auto;display:block}
+.rx{stroke:var(--c);stroke-width:3.5;stroke-linecap:round}
+.rl{stroke:var(--ink);stroke-width:2;stroke-linecap:round}
+.scale{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;font-size:.78rem;color:var(--muted);margin-top:-4px}
+.scale .m{font:700 1.05rem/1.2 var(--marker);color:var(--c);text-align:center}
+.scale span:last-child{text-align:right}
+.card p{font-size:.93em}
+.aber{color:var(--muted);font-size:.9em}
+.aber b{font:700 1.02rem var(--marker);color:var(--red)}
+
+/* sheet, faq, footer */
+.sheet{background:var(--paper);padding:clamp(20px,3vw,40px);box-shadow:1px 4px 12px rgba(0,0,0,.15);transform:rotate(-.4deg);position:relative;max-width:1180px;display:grid;gap:14px}
+.sheet .tape{left:40px;transform:rotate(-4deg)}.sheet .tape.r{left:auto;right:40px;transform:rotate(3deg)}
+.sheet h3{font:700 1.15rem var(--text)}
+.sheet dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px 32px}
+.sheet dt{font-weight:700}
+.sheet dd{font-size:.92em;color:var(--muted)}
+.snote{font-size:.85em;color:var(--muted)}
+.faq{display:grid;grid-template-columns:repeat(3,1fr);gap:26px 22px;padding:10px 6px}
+.faq .sticky{font-size:.95em;line-height:1.45;--rot:-.8deg}
+.faq .sticky:nth-child(even){--rot:.7deg}
+.faq b{display:block;font:700 1.15rem/1.25 var(--marker);margin-bottom:6px}
+.foot{font-size:.8rem;line-height:1.6;color:var(--muted);display:grid;gap:4px;border-top:2px dashed #C6C7C0;padding-top:16px}
+.foot b{color:var(--ink)}
+
+@media(max-width:1200px){.cards.kunde{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1000px){
+  .iter{grid-template-columns:1fr}
+  .cycle{position:static;max-width:460px}
+  .faq{grid-template-columns:repeat(2,1fr)}
+  .sliders{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:900px){.cards.team{grid-template-columns:repeat(2,1fr)}.cards.team .card:last-child{grid-column:1/-1}}
+@media(max-width:800px){
+  .title{grid-template-columns:1fr}
+  .step{grid-template-columns:48px minmax(0,1fr)}
+  .notes{grid-column:2}
+}
+@media(max-width:600px){
+  .board{border-width:6px}
+  .cards.kunde,.cards.team{grid-template-columns:1fr}.cards.team .card:last-child{grid-column:auto}
+  .faq{grid-template-columns:1fr}
+  .step{grid-template-columns:1fr}.notes{grid-column:auto}
+  .sliders{grid-template-columns:repeat(2,1fr)}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wall"><main class="board" lang="de">
+
+<header class="title">
+  <div>
+    <p class="m kicker">Vorgehensmodell · Poster</p>
+    <h1>Extreme Programming</h1>
+    <p class="sub">Kent Beck, 1999: „Extreme Programming Explained – Embrace Change“. Was in der Softwareentwicklung nachweislich gut ist – Tests, Reviews, Integration, Kundenkontakt –, macht XP nicht gelegentlich, sondern permanent. Wenig Prozess, viel Disziplin.</p>
+  </div>
+  <aside class="sticky facts">
+    <b>Steckbrief</b>
+    <ul>
+      <li>Iteration: 1–2 Wochen</li>
+      <li>Team: 2–12 Entwickler:innen, ein Raum</li>
+      <li>Kunde: sitzt beim Team</li>
+      <li>Werte: Kommunikation, Einfachheit, Feedback, Mut, Respekt</li>
+      <li>12 Praktiken (Zettel weiter unten)</li>
+    </ul>
+  </aside>
+</header>
+
+<section class="sec">
+  <h2>„Alle Regler auf 10“</h2>
+  <p class="lead">Becks Argument, das dem Modell seinen Namen gibt: Wenn etwas gut ist, dann nicht ab und zu, sondern die ganze Zeit.</p>
+  <div class="sliders" id="sliders"></div>
+</section>
+
+<section class="sec">
+  <h2>Eine Iteration – zwei Wochen im Team</h2>
+  <p class="lead">Neben jedem Schritt hängen Zettel: welche der 13 Bewertungskriterien dort sichtbar werden. Jeder Zettel nennt die Karteikarte, auf der es genauer steht.</p>
+  <div class="iter">
+    <div><div class="cycle" id="cycle"></div><p class="cap">Aufstellung einmal, Schritte 1–6 in jeder Iteration</p></div>
+    <ol class="steps" id="steps"></ol>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Die 13 Kriterien als Karteikarten</h2>
+  <p class="lead">Jede Karte zeigt, wo XP auf der Skala von 0 bis 10 steht (Einschätzung der Gruppe), warum – und was man beachten muss.</p>
+  <div class="cgroup"><h3 class="blue">Kundenkriterien</h3><div class="cards kunde" id="ck"></div></div>
+  <div class="cgroup"><h3 class="green">Kriterien Entwicklungsteam</h3><div class="cards team" id="ct"></div></div>
+</section>
+
+<section class="sec">
+  <h2>Die 12 Praktiken</h2>
+  <div class="sheet"><i class="tape"></i><i class="tape r"></i>
+    <h3>Kurzfassung nach Kent Beck, Extreme Programming Explained (1999)</h3>
+    <dl id="gloss"></dl>
+    <p class="snote">Die 2. Auflage (2004) formuliert sie neu als 13 primäre und 11 begleitende Praktiken – u. a. Sit Together, Whole Team, Informative Workspace, Stories, Weekly Cycle, 10-Minute Build.</p>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Fragen, die am Stand kommen</h2>
+  <div class="faq" id="faq"></div>
+</section>
+
+<footer class="foot">
+  <p><b>Skalen</b> · 0 = minimal, 10 = maximal; qualitative Einschätzung der Gruppe auf Basis der Literatur.</p>
+  <p><b>Quellen</b> · Beck, K. (1999): Extreme Programming Explained. Embrace Change. Addison-Wesley · Beck, K.; Andres, C. (2004): 2. Aufl. · Beck, K.; Fowler, M. (2000): Planning Extreme Programming · Jeffries, R.; Anderson, A.; Hendrickson, C. (2000): Extreme Programming Installed.</p>
+  <p>Digitales Poster · Gruppe Extreme Programming</p>
+</footer>
+
+</main></div>
+
+<script>
+['Kalam:wght@400;700','Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400'].forEach(f=>{const l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family='+f+'&display=swap';document.head.appendChild(l)});
+
+const PRACTICES={
+ 'Planning Game':'Kunde priorisiert Stories nach Geschäftswert, Team schätzt den Aufwand – gemeinsam wird festgelegt, was in Release und Iteration kommt.',
+ 'Small Releases':'Kleine, nutzbare Versionen gehen früh und regelmäßig in Produktion – Wochen, nicht Jahre.',
+ 'Metaphor':'Ein gemeinsames, einfaches Bild des Systems, damit Kunde und Team dieselbe Sprache sprechen.',
+ 'Simple Design':'Die einfachste Lösung, die alle Tests besteht. Nichts auf Vorrat bauen (YAGNI).',
+ 'Testing (TDD)':'Erst der Test, dann der Code. Unit-Tests vom Team, Akzeptanztests vom Kunden.',
+ 'Refactoring':'Die Struktur des Codes laufend verbessern, ohne sein Verhalten zu ändern.',
+ 'Pair Programming':'Zwei Personen, ein Rechner: eine tippt, eine denkt mit. Review passiert dauerhaft.',
+ 'Collective Ownership':'Jede:r im Team darf jeden Code jederzeit ändern – niemand „besitzt“ ein Modul.',
+ 'Continuous Integration':'Mehrmals täglich integrieren und die komplette Testsuite laufen lassen.',
+ 'Sustainable Pace':'40-Stunden-Woche: keine Dauerüberstunden, denn müde Teams machen Fehler.',
+ 'On-Site Customer':'Ein echter Kunde mit Entscheidungsbefugnis sitzt beim Team und beantwortet Fragen sofort.',
+ 'Coding Standards':'Gemeinsame Regeln, damit der Code aussieht, als hätte ihn eine Person geschrieben.'
+};
+
+const CRITERIA=[
+ {id:1,g:'kunde',short:'Kommunikation &amp; Feedback',name:'Kontinuierliche Kommunikation und Feedback',v:10,tag:'10 – auf Anschlag',scale:['selten','permanent'],
+  how:'Der Kunde sitzt beim Team und beantwortet Fragen sofort, statt sie für Meetings zu sammeln. Alle ein bis zwei Wochen nimmt er lauffähige Software per Akzeptanztest ab. Feedback ist kein Termin, sondern Dauerzustand.',
+  p:'On-Site Customer, Small Releases, Akzeptanztests, Stand-up',
+  but:'Funktioniert nur, wenn der Kunde diese Zeit wirklich investiert. Ein Kunde, der nicht kommt, ist der häufigste Grund, warum XP scheitert.'},
+ {id:2,g:'kunde',short:'Kommunikationspartner',name:'Kommunikationspartner (Größe/Anzahl)',v:2,tag:'2 – ein Kunde, ein Team',scale:['wenige','viele'],
+  how:'Auf Kundenseite eine Person – oder ein kleines Kundenteam – mit Entscheidungsbefugnis. Auf Teamseite alle Entwickler:innen direkt, ohne Zwischeninstanz wie Projektleitung oder Requirements-Engineer. Der Kommunikationsweg führt über den Tisch.',
+  p:'On-Site Customer, Whole Team, Sit Together',
+  but:'Der eine Kunde muss die Interessen aller Stakeholder bündeln. In großen Organisationen wird er zum Flaschenhals.'},
+ {id:3,g:'kunde',short:'Änderungen im Projekt',name:'Möglichkeit zu Änderungen/Erweiterungen während des Projekts',v:10,tag:'10 – jederzeit willkommen',scale:['eingefroren','jederzeit'],
+  how:'„Embrace Change“ ist der Untertitel des XP-Buchs. Der Kunde schreibt jederzeit neue Story Cards oder wirft alte weg; beim nächsten Planning Game werden sie eingeordnet. Innerhalb einer Iteration darf er Stories gleicher Größe tauschen.',
+  p:'Planning Game, Story Cards, Simple Design, Refactoring',
+  but:'Änderungen sind kostenlos, aber nicht umsonst: Was neu hineinkommt, verdrängt etwas anderes aus der Iteration.'},
+ {id:4,g:'kunde',short:'Qualitätsstandards',name:'Qualitätsmaßnahmen/-Standards werden eingehalten/umgesetzt',v:9,tag:'9 – im Prozess eingebaut',scale:['nachgelagert','eingebaut'],
+  how:'Qualität wird nicht am Ende geprüft, sondern beim Bauen erzeugt: Jeder Code entsteht test-first, jede Zeile wird durch Pairing sofort gegengelesen, mehrmals täglich läuft die gesamte Testsuite. Der Kunde definiert selbst die Akzeptanztests, die „fertig“ bedeuten.',
+  p:'TDD, Pair Programming, Continuous Integration, Coding Standards, Akzeptanztests',
+  but:'Externe Normen und Nachweise (ISO, Audits, Zulassungsdokumentation) sieht XP nicht vor. Sie müssen ergänzt werden.'},
+ {id:5,g:'team',short:'Projektgröße',name:'Umfang / Größe des Projekts',v:3,tag:'3 – klein bis mittel',scale:['klein','groß'],
+  how:'XP ist für Teams von zwei bis etwa zwölf Entwickler:innen an einem Ort ausgelegt. Gespräche über den Tisch, tägliches Pairing und ein einziger Kunde im Raum skalieren nicht beliebig. Projekte laufen Monate bis wenige Jahre – in kleinen Releases.',
+  p:'Whole Team, Sit Together, Small Releases',
+  but:'Großprojekte brauchen Ergänzungen: mehrere XP-Teams, ein Skalierungsrahmen oder die Kombination mit Scrum.'},
+ {id:6,g:'team',short:'Doku-Overhead',name:'Umgebung/Overhead für die Dokumentation',v:2,tag:'2 – minimal',scale:['minimal','umfangreich'],
+  how:'Es gibt keine Pflichtdokumente. Story Cards tragen die Planung, Unit-Tests sind die ausführbare Spezifikation, Akzeptanztests die Abnahmekriterien, lesbarer Code mit Coding Standards das Design. Geschrieben wird nur, was nachweislich jemand braucht.',
+  p:'Story Cards, TDD, Coding Standards, Metaphor, Simple Design',
+  but:'Wissen liegt in Köpfen und Code. Bei Teamwechsel oder Übergabe an ein Wartungsteam fehlt oft der Überblick – dann muss nachdokumentiert werden.'},
+ {id:7,g:'team',short:'Einarbeitung',name:'Initialer Aufwand der Einarbeitung',v:4,tag:'4 – gering, aber Disziplin nötig',scale:['gering','hoch'],
+  how:'Das Modell ist schnell erklärt: fünf Werte, zwölf Praktiken, kaum Artefakte. Neue Teammitglieder lernen durch Pairing am echten Code; Collective Ownership und Coding Standards machen jede Ecke zugänglich.',
+  p:'Pair Programming, Collective Ownership, Coding Standards',
+  but:'Die Praktiken zu beherrschen dauert: TDD und Pairing verlangen Übung und Disziplin. Teams, die auf XP umstellen, brauchen meist einen Coach.'},
+ {id:8,g:'team',short:'Flexibilität / Patches',name:'Flexibilität bei Änderungen/Patches/…',v:9,tag:'9 – sehr hoch',scale:['starr','sehr hoch'],
+  how:'Ein Patch ist in XP eine kleine Story: Test schreiben, der den Fehler zeigt, fixen, integrieren, ausliefern. Die automatische Testsuite fängt Regressionen ab, CI hält den Stand jederzeit lieferfähig, und jede:r darf überall ändern.',
+  p:'Continuous Integration, TDD, Collective Ownership, Refactoring, 10-Minute Build',
+  but:'Nur so gut wie die Testabdeckung. Ohne Tests kippt die Flexibilität in Chaos.'},
+ {id:9,g:'team',short:'Zeit- &amp; Kostenplanung',name:'Zeit-/Kostenplanung',v:6,tag:'6 – Zeit fix, Umfang variabel',scale:['grob','exakt'],
+  how:'Vier Variablen: Kosten, Zeit, Qualität, Umfang. Der Kunde legt drei fest, das Team die vierte – meist bleibt der Umfang variabel. Geplant wird kurzfristig: Stories werden in Story Points geschätzt, die Velocity der letzten Iteration bestimmt, was in die nächste passt.',
+  p:'Planning Game, Velocity, Small Releases, Sustainable Pace',
+  but:'Kosten und Termin sind verlässlich, der Lieferumfang nicht. Festpreisverträge mit fixem Umfang passen schlecht zu XP.'},
+ {id:10,g:'team',short:'Visualisierung',name:'Visualisierung (des Fortschritts/Dokumentation)',v:7,tag:'7 – hängt an der Wand',scale:['unsichtbar','allgegenwärtig'],
+  how:'Der Projektstand hängt im Raum: Story Wall mit den Karten der Iteration, Velocity-Chart, Liste offener Fehler, Build-Ampel der Continuous Integration. Jede:r sieht jederzeit, wo das Team steht – ohne Reporting-Tool.',
+  p:'Informative Workspace, Story Cards, Stand-up, Continuous Integration',
+  but:'Für Außenstehende (Management, Lenkungskreis) gibt es wenig formale Berichte. Die Wand hängt im Teamraum.'},
+ {id:11,g:'team',short:'Aufgabenverteilung',name:'Aufgabenverteilung',v:8,tag:'8 – selbstorganisiert',scale:['zugeteilt','selbst gewählt'],
+  how:'Der Kunde priorisiert Stories, das Team zerlegt sie in Tasks, und Entwickler:innen übernehmen Tasks selbst (Sign-up), statt sie zugeteilt zu bekommen. Pairs wechseln täglich, jeder Code gehört allen.',
+  p:'Planning Game, Collective Ownership, Pair Programming, Stand-up',
+  but:'Verlangt ein reifes, verantwortungsbewusstes Team. Es gibt keine Projektleitung, die zuteilt und nachhält.'},
+ {id:12,g:'team',short:'Rollen',name:'Verwendung von Rollen',v:3,tag:'3 – wenige, leicht',scale:['keine','strikt'],
+  how:'Rollen gibt es, aber keine Hierarchie: Customer, Programmer, Tester, Tracker (misst Velocity und Fortschritt), Coach (wacht über den Prozess), Manager. Rollen sind Aufgaben, keine Positionen – eine Person kann mehrere haben, alle sind ein Team.',
+  p:'Whole Team, On-Site Customer',
+  but:'Klar zugewiesene Verantwortung, etwa für Architektur oder Betrieb, fehlt. In größeren Vorhaben kann das zum Problem werden.'},
+ {id:13,g:'team',short:'Komplexität',name:'Komplexität',v:3,tag:'3 – schlankes Modell',scale:['schlank','schwergewichtig'],
+  how:'Das Vorgehensmodell ist bewusst schlank: fünf Werte, zwölf Praktiken, kaum Artefakte und Meetings. Technisch hält Simple Design die Lösung so einfach wie möglich („You Aren’t Gonna Need It“). XP passt zu Projekten, deren Anforderungen unklar sind oder sich ändern.',
+  p:'Simple Design, Metaphor, Refactoring',
+  but:'Einfach zu verstehen, schwer durchzuhalten. Für sicherheitskritische oder verteilte Großprojekte ist XP allein zu leichtgewichtig.'}
+];
+
+const STEPS=[
+ {when:'Aufstellung · vor der ersten Iteration',short:'Whole Team',title:'Whole Team: Kunde und Team in einem Raum',
+  text:'XP beginnt mit einer Sitzordnung. Zwei bis zwölf Entwickler:innen, Tester:in, Coach – und der Kunde – arbeiten in einem Raum. Es gibt keine Abteilungen, keine Übergaben, keine Projektleitung, die dazwischensteht. Wer eine Frage hat, stellt sie über den Tisch.',
+  p:'Whole Team, Sit Together, On-Site Customer',
+  finds:[[5,'2–12 Entwickler:innen an einem Ort: XP ist bewusst für kleine bis mittlere Projekte gebaut.'],[2,'Ein Kunde mit Entscheidungsbefugnis spricht direkt mit dem ganzen Team – ohne Zwischeninstanz.'],[12,'Customer, Programmer, Tester, Tracker, Coach: Rollen sind Aufgaben, keine Hierarchie.']]},
+ {when:'Tag 1 · etwa zwei Stunden',short:'Planning Game',title:'Planning Game',
+  text:'Der Kunde bringt seine Anforderungen als Story Cards mit – ein Satz pro Karte, in seiner Sprache. Das Team schätzt jede Karte in Story Points, der Kunde sortiert nach Geschäftswert. Wie viele Karten in die Iteration passen, entscheidet die Velocity der letzten Iteration. Dann zerlegt das Team die Stories in Tasks, und jede:r trägt sich selbst ein.',
+  p:'Planning Game, Story Cards, Velocity',
+  finds:[[9,'Zeit und Kosten sind fix (Iterationslänge, Team), der Umfang ist variabel. Geplant wird mit gemessener Velocity, nicht mit Hoffnung.'],[11,'Der Kunde priorisiert, das Team zerlegt, Entwickler:innen wählen ihre Tasks selbst.']]},
+ {when:'jeden Morgen · 15 Minuten',short:'Stand-up',title:'Stand-up an der Story Wall',
+  text:'Das Team steht vor der Wand mit den Story Cards: Was ist gestern fertig geworden, was ist heute dran, wo hakt es? Der Kunde ist dabei und beantwortet offene Fragen sofort. Der Tracker aktualisiert das Velocity-Chart, die Build-Ampel zeigt, ob der letzte Stand grün ist.',
+  p:'Stand-up, Informative Workspace, On-Site Customer',
+  finds:[[1,'Kommunikation ist kein Meeting-Termin, sondern täglicher Normalzustand – mit dem Kunden im Raum.'],[10,'Story Wall, Velocity-Chart, Build-Ampel: Der Fortschritt hängt sichtbar an der Wand, nicht in einem Tool.']]},
+ {when:'Tag 1–9 · den ganzen Tag',short:'Pairing + TDD',title:'Pair Programming mit Test-First',
+  text:'Zwei Personen, ein Rechner. Zuerst entsteht ein Test, der noch fehlschlägt – dann gerade so viel Code, dass er grün wird. Die Pairs wechseln täglich, so wandert Wissen durchs Team. Wer neu ist, lernt am echten Code statt aus Handbüchern.',
+  p:'Pair Programming, TDD, Coding Standards',
+  finds:[[4,'Test-first, permanentes Review durch Pairing, gemeinsame Coding Standards: Qualität entsteht beim Bauen.'],[7,'Neue lernen durch Pairing schnell – aber TDD und Pairing selbst verlangen Übung und Disziplin.']]},
+ {when:'laufend · bei jeder Änderung',short:'Refactoring',title:'Simple Design und Refactoring',
+  text:'Gebaut wird die einfachste Lösung, die alle Tests besteht – nichts auf Vorrat („You Aren’t Gonna Need It“). Wird der Code unübersichtlich, wird er sofort umgebaut, abgesichert durch die Tests. Ein Pflichtenheft gibt es nicht: Karten, Tests und lesbarer Code sind die Dokumentation.',
+  p:'Simple Design, Refactoring, Metaphor, Collective Ownership',
+  finds:[[13,'Schlankes Modell, einfaches Design: XP hält den Prozess und die Software so einfach wie möglich.'],[6,'Kaum Dokumentations-Overhead: Story Cards, Tests und Code ersetzen Pflichtenheft und Designdokumente.']]},
+ {when:'mehrmals täglich',short:'Integration',title:'Continuous Integration',
+  text:'Sobald ein Pair einen Task abschließt, integriert es in den gemeinsamen Stand und lässt die komplette Testsuite laufen – in unter zehn Minuten. Schlägt ein Test fehl, wird sofort repariert oder zurückgerollt. Das System ist zu jeder Tageszeit lieferfähig.',
+  p:'Continuous Integration, 10-Minute Build, Collective Ownership',
+  finds:[[8,'Patches und Änderungen sind kleine Stories: Test, Fix, Integration, Auslieferung. Die Testsuite fängt Regressionen ab.']]},
+ {when:'Tag 10 · Iterationsende',short:'Release',title:'Abnahme und Small Release',
+  text:'Der Kunde führt seine Akzeptanztests aus und sieht laufende Software – keine Folien. Was fertig ist, geht als kleines Release in Produktion. Beim Ausprobieren merkt der Kunde oft: „So habe ich mir das nicht vorgestellt.“ Dann schreibt er eine neue Karte. Kein Change Request, kein Gremium – die nächste Iteration beginnt mit Schritt 1.',
+  p:'Akzeptanztests, Small Releases, Planning Game',
+  finds:[[3,'Änderungen sind erwünscht: Neue oder geänderte Stories kommen jederzeit an die Wand und werden im nächsten Planning Game eingeordnet.']]}
+];
+
+const FAQ=[
+ ['Wofür steht das „Extreme“?','Nicht für Überstunden. Beck: Wenn Reviews gut sind, reviewen wir ständig (Pairing). Wenn Testen gut ist, testen alle immer (TDD). Bewährte Praktiken auf Anschlag gedreht.'],
+ ['Wen fragt das Team bei fachlichen Fragen?','Den On-Site Customer, der beim Team sitzt und sofort entscheidet. Keine Projektleitung dazwischen, kein Anforderungsdokument, das zu Beginn abgenommen wurde.'],
+ ['Wann wird getestet?','Vor dem Code. Erst der fehlschlagende Test, dann gerade so viel Code, dass er grün wird. Der Kunde ergänzt Akzeptanztests, die „fertig“ definieren.'],
+ ['Der Kunde will mitten im Projekt etwas Neues – und dann?','Er schreibt eine Story Card. Im nächsten Planning Game wird sie priorisiert. Kein Change Request, kein Lenkungskreis – die neue Karte verdrängt nur eine andere aus der Iteration.'],
+ ['Wer verteilt die Aufgaben?','Niemand. Der Kunde priorisiert Stories, das Team zerlegt sie in Tasks, und jede:r trägt sich selbst ein.'],
+ ['Wie lang ist eine Iteration?','Ein bis zwei Wochen, ein festes Zeitfenster. Am Ende steht immer lauffähige Software, die der Kunde abnimmt.'],
+ ['Ist XP dasselbe wie Scrum?','Nein. Scrum regelt Organisation und Rollen, XP vor allem die Technik: TDD, Pairing, Refactoring, Continuous Integration. Viele Teams kombinieren beides.'],
+ ['Für welche Projekte passt XP nicht?','Sehr große, verteilte oder sicherheitskritische Vorhaben mit Nachweispflichten. Und alle, bei denen der Kunde nicht wirklich mit im Raum sitzt.'],
+ ['Was passiert mit der Dokumentation?','Es gibt keine Pflichtdokumente. Story Cards, Tests und lesbarer Code sind die Dokumentation. Geschrieben wird nur, was nachweislich jemand braucht.']
+];
+
+const SLIDERS=[['Code-Reviews','→ Pair Programming, ständig'],['Testen','→ Test-First, alle, immer'],['Design','→ Refactoring, täglich'],['Integration','→ Continuous Integration, mehrmals täglich'],['Kurze Iterationen','→ 1–2 Wochen statt Monate'],['Kundennähe','→ On-Site Customer, im selben Raum']];
+
+const $=s=>document.querySelector(s);
+const pad=n=>String(n).padStart(2,'0');
+const G={kunde:'Kunde',team:'Team'};
+const byId=id=>CRITERIA.find(c=>c.id===id);
+const f1=n=>n.toFixed(1);
+
+/* sliders */
+$('#sliders').innerHTML=SLIDERS.map(([a,b],i)=>`<div class="sl" style="--i:${i}"><svg viewBox="0 0 60 184" aria-hidden="true"><text class="tk" x="30" y="16">10</text><line class="rail" x1="30" y1="28" x2="30" y2="150"/><text class="tk" x="30" y="174">0</text><rect class="knob" x="13" y="20" width="34" height="16" rx="3" transform="rotate(${i%2?2:-2} 30 28)"/></svg><b>${a}</b><span>${b}</span></div>`).join('');
+if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+  const el=$('#sliders');el.classList.add('noanim');
+  el.querySelectorAll('.knob').forEach(k=>k.style.transform='translateY(122px)');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{el.classList.remove('noanim');el.querySelectorAll('.knob').forEach(k=>k.style.transform='')}));
+}
+
+/* hand-drawn cycle */
+const wob=(cx,cy,r,d)=>{
+  const n=d.length,P=d.map((o,i)=>{const t=i/n*2*Math.PI-Math.PI/2;return [cx+(r+o)*Math.cos(t),cy+(r+o)*Math.sin(t)]});
+  let s=`M${f1(P[0][0])},${f1(P[0][1])}`;
+  for(let i=0;i<n;i++){const p0=P[(i-1+n)%n],p1=P[i],p2=P[(i+1)%n],p3=P[(i+2)%n];
+    s+=` C${f1(p1[0]+(p2[0]-p0[0])/6)},${f1(p1[1]+(p2[1]-p0[1])/6)} ${f1(p2[0]-(p3[0]-p1[0])/6)},${f1(p2[1]-(p3[1]-p1[1])/6)} ${f1(p2[0])},${f1(p2[1])}`}
+  return s+'Z'};
+const pt=(r,a)=>{const t=a*Math.PI/180;return [200+r*Math.cos(t),200+r*Math.sin(t)]};
+$('#cycle').innerHTML=(()=>{
+  const nodes=STEPS.slice(1).map((s,i)=>{
+    const a=-90+i*60,[x,y]=pt(140,a),[lx,ly]=pt(194,a),c=Math.cos(a*Math.PI/180),sn=Math.sin(a*Math.PI/180);
+    const anchor=c>.3?'start':c<-.3?'end':'middle',dy=sn>.3?20:sn<-.3?-9:6;
+    return `<path class="nd" d="${wob(x,y,26,[1,-1.5,1,-1,1.5,-1])}"/><text class="nn" x="${f1(x)}" y="${f1(y+8)}">${i+1}</text><text class="nl" x="${f1(lx)}" y="${f1(ly+dy)}" text-anchor="${anchor}">${s.short}</text>`}).join('');
+  const arrows=[...Array(6)].map((_,i)=>{const a=-60+i*60,[x,y]=pt(140,a);return `<path class="arr" d="M-8,-7 L4,0 L-8,7" transform="translate(${f1(x)},${f1(y)}) rotate(${a+90})"/>`}).join('');
+  return `<svg viewBox="-90 -14 580 428" role="img" aria-label="Iterationskreislauf: Whole Team in der Mitte, sechs Schritte im Kreis"><path class="ring" d="${wob(200,200,140,[3,-4,2,-3,4,-2,3,-3])}"/>${arrows}<path class="hub" d="${wob(200,200,62,[2,-2,1.5,-2,2,-1.5,1,-2])}"/><text class="hb" x="200" y="198">Whole Team</text><text class="hs" x="200" y="220">Kunde + Team</text>${nodes}</svg>`})();
+
+/* steps with sticky notes */
+$('#steps').innerHTML=STEPS.map((s,i)=>`<li class="step"><div class="snum">${i}</div>
+ <div class="stext"><h3>${s.title}<small>${s.when}</small></h3><p>${s.text}</p><p class="prak"><b>Praktiken:</b> ${s.p}</p></div>
+ <div class="notes">${s.finds.map(([id,note])=>{const c=byId(id);return `<a class="sticky note ${c.g}" href="#k${pad(id)}"><b>${G[c.g]} · Karte ${pad(id)} · ${c.short}</b>${note}</a>`}).join('')}</div></li>`).join('');
+
+/* index cards */
+const rate=(v,cls)=>{const x=8+204*v/10;return `<svg viewBox="0 0 220 26" aria-hidden="true"><line class="rl" x1="8" y1="13" x2="212" y2="13"/><line class="rl" x1="8" y1="7" x2="8" y2="19"/><line class="rl" x1="212" y1="7" x2="212" y2="19"/><g class="rx" transform="rotate(8 ${x} 13)"><line x1="${x-6}" y1="7" x2="${x+6}" y2="19"/><line x1="${x-6}" y1="19" x2="${x+6}" y2="7"/></g></svg>`};
+const card=c=>`<article class="card ${c.g}" id="k${pad(c.id)}"><i class="tape"></i><div class="chead"><p class="cno">${G[c.g]} · Karte ${pad(c.id)}</p><h4>${c.name}</h4></div>
+ <div class="rate">${rate(c.v)}</div><p class="scale"><span>${c.scale[0]}</span><span class="m">${c.tag}</span><span>${c.scale[1]}</span></p>
+ <p>${c.how}</p><p class="prak"><b>Praktiken:</b> ${c.p}</p><p class="aber"><b>Aber:</b> ${c.but}</p></article>`;
+$('#ck').innerHTML=CRITERIA.filter(c=>c.g==='kunde').map(card).join('');
+$('#ct').innerHTML=CRITERIA.filter(c=>c.g==='team').map(card).join('');
+
+/* practices sheet, faq */
+$('#gloss').innerHTML=Object.entries(PRACTICES).map(([n,d],i)=>`<div><dt>${pad(i+1)} ${n}</dt><dd>${d}</dd></div>`).join('');
+$('#faq').innerHTML=FAQ.map(([q,a])=>`<div class="sticky"><b>${q}</b>${a}</div>`).join('');
+</script>
+</body>
+</html>
